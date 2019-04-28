@@ -32,8 +32,7 @@ export const resolvers: IResolvers<Context> = {
       function shouldShuffle() {
         return (
           election.status === 'OPEN' &&
-          ctx.claims &&
-          ctx.claims.userId === election.createdBy
+          (!ctx.claims || ctx.claims.userId !== election.createdBy)
         );
       }
 
