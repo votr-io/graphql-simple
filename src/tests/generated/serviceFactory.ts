@@ -118,7 +118,7 @@ export function createService(client: ApolloClient<any>) {
   
   export const CreateElectionMutation = gql`mutation CreateElection($candidates:[CreateCandidateInput!]!,$description:String!,$email:String,$name:String!){createElection(input:{name:$name,description:$description,candidates:$candidates,email:$email}){__typename adminToken election{__typename candidates{__typename description id name}description id name results{__typename winner{__typename id name}}status statusTransitions{__typename on status}}}}`
   
-  export const GetElectionsQuery = gql`query GetElections($ids:[ID!]!){getElections(input:{ids:$ids}){__typename elections{__typename candidates{__typename description id name}description id name results{__typename winner{__typename id name}}status statusTransitions{__typename on status}}}}`
+  export const GetElectionsQuery = gql`query GetElections($ids:[ID!]!){getElections(input:{ids:$ids}){__typename elections{__typename candidates{__typename description id name}description id name results{__typename replay{__typename candidateTotals{__typename candidate{__typename id}votes}}winner{__typename id name}}status statusTransitions{__typename on status}}}}`
   
   export const ListElectionsQuery = gql`query ListElections{listElections(input:{}){__typename elections{__typename candidates{__typename description id name}description id name results{__typename winner{__typename id name}}status statusTransitions{__typename on status}}}}`
   

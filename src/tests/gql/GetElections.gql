@@ -19,6 +19,14 @@ query GetElections($ids: [ID!]!) {
           id
           name
         }
+        replay {
+          candidateTotals {
+            candidate {
+              id
+            }
+            votes
+          }
+        }
       }
     }
   }

@@ -27,9 +27,26 @@ export interface GetElections_getElections_elections_results_winner {
   name: string;
 }
 
+export interface GetElections_getElections_elections_results_replay_candidateTotals_candidate {
+  __typename: "Candidate";
+  id: string;
+}
+
+export interface GetElections_getElections_elections_results_replay_candidateTotals {
+  __typename: "CandidateVotes";
+  candidate: GetElections_getElections_elections_results_replay_candidateTotals_candidate | null;
+  votes: number;
+}
+
+export interface GetElections_getElections_elections_results_replay {
+  __typename: "Round";
+  candidateTotals: GetElections_getElections_elections_results_replay_candidateTotals[];
+}
+
 export interface GetElections_getElections_elections_results {
   __typename: "Results";
   winner: GetElections_getElections_elections_results_winner;
+  replay: GetElections_getElections_elections_results_replay[];
 }
 
 export interface GetElections_getElections_elections {
