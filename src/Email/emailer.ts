@@ -11,6 +11,8 @@ export function sendNewElectionEmail(to: string, election: Election) {
   //don't send email if this is an automated test
   if (to.endsWith('@fake.com')) return;
 
+  console.log(`sending email to ${to}`);
+
   const adminToken = tokens.encryptAdminToken({
     electionId: election.id,
     userId: election.createdBy,
