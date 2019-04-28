@@ -1,0 +1,32 @@
+mutation UpdateElection(
+  $id: ID!
+  $name: String
+  $description: String
+  $candidates: [CreateCandidateInput!]
+) {
+  updateElection(
+    input: { id: $id, name: $name, description: $description, candidates: $candidates }
+  ) {
+    election {
+      id
+      name
+      description
+      candidates {
+        id
+        name
+        description
+      }
+      status
+      statusTransitions {
+        on
+        status
+      }
+      results {
+        winner {
+          id
+          name
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+mutation StopElection($id: ID!) {
+  stopElection(input: { id: $id }) {
+    election {
+      id
+      name
+      description
+      candidates {
+        id
+        name
+        description
+      }
+      status
+      statusTransitions {
+        on
+        status
+      }
+      results {
+        winner {
+          id
+          name
+        }
+      }
+    }
+  }
+}
