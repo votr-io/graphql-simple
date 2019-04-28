@@ -7,9 +7,6 @@ import { resolvers } from './api/resolvers';
 
 import { context } from './api/context';
 
-//@ts-ignore
-import * as lodash from 'lodash';
-
 const app = express();
 app.use(cors());
 

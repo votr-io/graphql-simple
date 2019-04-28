@@ -12,7 +12,7 @@
     "dev": "ts-node-dev --respawn src/index.ts",
     "postinstall": "npm run build",
     "build": "tsc && npm run migrate",
-    "migrate": "db-migrate reset && db-migrate up",
+    "migrate": "db-migrate up",
     "start": "node build/index.js"
   },
   "author": "",

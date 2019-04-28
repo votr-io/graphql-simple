@@ -249,7 +249,7 @@ export interface CastBallotMutationArgs {
 
 import { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
 
-import { Election } from '../../Election/types';
+import { Election } from '../../types';
 
 export type Resolver<Result, Parent = {}, Context = {}, Args = {}> = (
   parent: Parent,

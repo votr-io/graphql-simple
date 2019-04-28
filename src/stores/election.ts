@@ -4,15 +4,17 @@ import { Election } from '../types';
 
 export const createElection = async (election: Election): Promise<Election> => {
   const dbElection = toDbElection(election);
-  const [columns, values] = columnsAndValues(dbElection);
-  const query = `INSERT INTO elections VALUES(${columns.join(', ')});`;
-  await db.none(query, values);
+
+  const query = `INSERT INTO 
+    elections (id, name, description, created_by, date_created, date_updated, candidates, status, status_transitions)
+    VALUES($(id), $(name), $(description), $(created_by), $(date_created), $(date_updated), $(candidates), $(status), $(status_transitions));`;
+  await db.none(query, dbElection);
   return election;
 };
 
 export const updateElection = async (election: Election): Promise<Election> => {
   const dbElection = toDbElection(election);
-  const query = `UPDATE elections SET name = $(name), description = $(description), date_updated = $(date_updated), status = $(status), status_transistions=$(status_transitions), results = $(results), candidates = $(candidates) WHERE id = $(id)`;
+  const query = `UPDATE elections SET name = $(name), description = $(description), date_updated = $(date_updated), status = $(status), status_transitions=$(status_transitions), results = $(results), candidates = $(candidates) WHERE id = $(id)`;
   await db.none(query, {
     ...dbElection,
     status_transitions: JSON.stringify(dbElection.status_transitions),
@@ -20,6 +22,11 @@ export const updateElection = async (election: Election): Promise<Election> => {
     results: JSON.stringify(dbElection.results),
   });
   return election;
+};
+
+export const listElections = async (): Promise<Election[]> => {
+  const dbElections = await db.any('SELECT * FROM elections');
+  return dbElections.map(fromDbElection);
 };
 
 export const getElections = async (ids: String[]): Promise<Election[]> => {
@@ -54,7 +61,9 @@ function toDbElection(election: Election) {
     created_by: election.createdBy,
     date_created: election.dateCreated,
     date_updated: election.dateUpdated,
-    status_transitions: election.statusTransitions,
+    status_transitions: JSON.stringify(election.statusTransitions),
+    candidates: JSON.stringify(election.candidates),
+    results: JSON.stringify(election.results),
   };
 }
 

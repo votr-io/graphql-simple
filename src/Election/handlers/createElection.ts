@@ -1,8 +1,10 @@
 import { Context } from '../../api/context';
-import { Election } from '../../types';
+import { Election, Candidate } from '../../types';
 import lodash = require('lodash');
 import { Handler, useHandler } from '../../lib/handler';
 import { sendNewElectionEmail } from '../../Email/emailer';
+import { getUsersByEmail, createUser } from '../../stores/user';
+import { createElection } from '../../stores/election';
 
 const uuid = require('uuid/v4');
 
@@ -24,59 +26,92 @@ const createElectionHandler: Handler<
     electionForm: ElectionForm;
     email: string;
   },
-  Promise<Election>
+  Promise<Election>,
+  {
+    name: string;
+    description: string;
+    candidates: Candidate[];
+    email: string;
+  }
 > = {
+  defaults,
   validate,
   handleRequest: async (ctx, input) => {
-    const { name, description, candidates } = input.electionForm;
-    const { email } = input;
+    const { name, description, candidates, email } = input;
 
-    //TODO: go through users service
-    let [user] = await userStore.getUsersByEmail([email]);
-
+    //get user, create if they don't exist yet
+    let [user] = await getUsersByEmail([email]);
     if (!user) {
-      user = await userStore.createUser({ id: uuid(), email, type: 'WEAK' });
+      user = await createUser({ id: uuid(), email, type: 'WEAK' });
     }
 
+    //create the election
     const id = uuid();
     const now = new Date().toISOString();
-    const event: WithoutId<ElectionCreated> = {
-      event_type: 'election_created',
-      aggregate_type: 'election',
-      aggregate_id: id,
-      date_created: now,
-      actor: user.id,
-      data: {
-        id,
-        name,
-        description,
-        candidates: candidates.map(({ id, name, description }) => ({
-          id: id ? id : uuid(),
-          name,
-          description: description ? description : '',
-        })),
-      },
+    const election: Election = {
+      id,
+      dateCreated: now,
+      dateUpdated: now,
+      createdBy: user.id,
+      name,
+      description,
+      candidates,
+      status: 'PENDING',
+      statusTransitions: [{ on: now, status: 'PENDING' }],
     };
 
-    await eventStore.create(event);
+    //save election to the store
+    await createElection(election);
 
-    const election = await eventStore.getElection(id);
-
-    //does it make sense to send the email here? probably should be based off the event stream
+    //email out a link to the election so they can get back to the admin page
     sendNewElectionEmail(email, election);
 
     return election;
   },
 };
 
-function validate(input: { electionForm: ElectionForm; email: string }) {
-  const { name, description, candidates } = input.electionForm;
-  const { email } = input;
+function defaults(input: {
+  electionForm: {
+    name: string;
+    description?: string;
+    candidates: CandidateForm[];
+  };
+  email: string;
+}) {
+  const { description, candidates } = input.electionForm;
+
+  return {
+    ...input.electionForm,
+    description: description ? description : '',
+    candidates: candidates.map(({ id, name, description }) => ({
+      id: id ? id : uuid(),
+      name,
+      description: description ? description : '',
+    })),
+    email: input.email,
+  };
+}
+
+function validate(input: {
+  name: string;
+  description: string;
+  candidates: Candidate[];
+  email: string;
+}) {
+  const { name, description, candidates, email } = input;
 
   const errors: string[] = [];
   if (name === '') {
     errors.push('name is required');
   }
+  if (name.length > 200) {
+    errors.push('name cannot be longer than 200 characters');
+  }
+
+  if (description.length > 800) {
+    errors.push('description cannot be longer than 800 characters');
+  }
+
   if (email == null || email === '') {
     errors.push('email is required if you do not have an account');
   }

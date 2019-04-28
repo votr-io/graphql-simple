@@ -1,27 +1,29 @@
-import { Context } from '../context';
+import { Context } from './context';
 
 import lodash = require('lodash');
 
-import * as tokens from '../User/tokens';
+import * as tokens from '../lib/tokens';
 
 import createElection from '../Election/handlers/createElection';
 import { IResolvers } from './generated/resolvers';
 import updateElection from '../Election/handlers/updateElection';
-import castBallot from '../Ballot/handlers/castBallot';
 import startElection from '../Election/handlers/startElection';
 import stopElection from '../Election/handlers/stopElection';
-import { Candidate } from '../Election/types';
+import { Candidate } from '../types';
+import { listElections, getElections } from '../stores/election';
+import { getUsers } from '../stores/user';
+import castBallot from '../Election/handlers/castBallot';
 
 export const resolvers: IResolvers<Context> = {
   Query: {
     listElections: async (_, __, ctx: Context) => {
-      const elections = lodash.values(ctx.readModel);
-
+      //TODO: move to handler for permissions checks once that's a thing
+      const elections = await listElections();
       return { elections };
     },
     getElections: async (_, { input }, ctx: Context) => {
-      const elections = input.ids.map(id => ctx.readModel[id]);
-
+      //TODO: move to handler for permissions checks once that's a thing
+      const elections = await getElections(input.ids);
       return { elections };
     },
   },
@@ -113,7 +115,7 @@ export const resolvers: IResolvers<Context> = {
 
       const { userId, electionId } = tokens.descryptAdminToken(adminToken);
 
-      const [user] = await ctx.userStore.getUsers([userId]);
+      const [user] = await getUsers([userId]);
       if (user == null) {
         throw new Error('user not found');
       }
