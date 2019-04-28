@@ -1,5 +1,4 @@
 import { db } from './db';
-import { isObject } from 'util';
 import { Election } from '../types';
 
 export const createElection = async (election: Election): Promise<Election> => {
@@ -37,18 +36,9 @@ export const getElection = async (id: string): Promise<Election> => {
 export const deleteElections = async (ids: String[]) => {
   //TODO: make this transactional
   await db.none('DELETE FROM ballots WHERE election_id IN ($1:csv);', ids);
-  return await db.none('DELETE FROM elections WHERE id IN ($1:csv);', ids);
+  await db.none('DELETE FROM elections WHERE id IN ($1:csv);', ids);
+  return;
 };
-
-function columnsAndValues(o: Object): [string[], Object] {
-  const keys = Object.keys(o);
-  const values = keys.reduce((acc, key) => {
-    const value = o[key];
-    acc[key] = isObject(value) ? JSON.stringify(value) : value;
-    return acc;
-  }, {});
-  return [keys.map(key => `$(${key})`), values];
-}
 
 function toDbElection(election: Election) {
   return {
