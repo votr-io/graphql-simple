@@ -3,14 +3,10 @@ import { Results } from '../types';
 import { streamBallots } from '../stores/ballot';
 
 export async function tallyElection(electionId: string): Promise<Results> {
-  let results;
-  try {
-    results = await getResults({
-      fetchBallots: () => streamBallots(electionId),
-    });
-  } catch (e) {
-    console.log(e);
-  }
+  const results = await getResults({
+    fetchBallots: () => streamBallots(electionId),
+  });
+
   return transformResults(results);
 }
 
