@@ -1,7 +1,8 @@
-import { Context } from '../../context';
-
 import { Handler, useHandler } from '../../lib/handler';
 import { UserInputError } from 'apollo-server';
+import { Context } from '../context';
+import { getElection } from '../../stores/election';
+import { createBallot } from '../../stores/ballot';
 
 const handler: Handler<
   Context,
@@ -13,7 +14,7 @@ const handler: Handler<
 > = {
   validate,
   handleRequest: async (ctx, { electionId, candidateIds }) => {
-    const election = ctx.readModel[electionId];
+    const election = await getElection(electionId);
 
     if (election.status === 'PENDING') {
       throw new UserInputError(`can't vote in an election that hasn't started yet`);
@@ -30,14 +31,9 @@ const handler: Handler<
       );
     }
 
-    const candidateIdToIndex = election.candidates.reduce((acc, { id }, i) => {
-      acc[id] = i;
-      return acc;
-    }, {});
-
-    await ctx.ballotStore.createBallot({
+    await createBallot({
       electionId,
-      candidateIndexes: candidateIds.map(id => candidateIdToIndex[id]),
+      candidateIds,
     });
   },
 };

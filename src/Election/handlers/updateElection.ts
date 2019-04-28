@@ -1,12 +1,10 @@
-import { Context } from '../../context';
-import { Election, Candidate } from '../types';
+import { Context } from '../../api/context';
+import { Election, Candidate } from '../../types';
 import { UserInputError } from 'apollo-server';
 import { Handler, useHandler } from '../../lib/handler';
-import { Events } from '../events';
-import { WithoutId } from '../EventStore';
-import { projectElection } from '../Election';
 import { getElectionAndCheckPermissionsToUpdate, authenticate } from './common';
 import uuid = require('uuid');
+import { updateElection } from '../../stores/election';
 
 interface CandidateForm {
   id?: string;
@@ -41,62 +39,20 @@ const handler: Handler<
       throw new UserInputError('cannot change an election after it has begun');
     }
 
-    const events: WithoutId<Events>[] = [];
-    const now = new Date().toISOString();
-    const actor = ctx.claims.userId;
-
     if (name) {
-      events.push({
-        event_type: 'election_name_changed',
-        aggregate_type: 'election',
-        aggregate_id: id,
-        date_created: now,
-        actor,
-        data: {
-          id,
-          name,
-        },
-      });
+      election.name = name;
     }
 
     if (description) {
-      events.push({
-        event_type: 'election_description_changed',
-        aggregate_type: 'election',
-        aggregate_id: id,
-        date_created: now,
-        actor,
-        data: {
-          id,
-          description,
-        },
-      });
+      election.description = description;
     }
 
     if (candidates) {
-      events.push({
-        event_type: 'election_candidates_changed',
-        aggregate_type: 'election',
-        aggregate_id: id,
-        date_created: now,
-        actor,
-        data: {
-          id,
-          candidates,
-        },
-      });
+      election.candidates = candidates;
     }
 
-    //persist each event
-    //TODO: should probably allow create to take multiple events
-    const persistedEvents = [];
-    for (let i = 0; i < events.length; i++) {
-      //guys, for loops are great
-      const id = await ctx.eventStore.create(events[i]);
-      persistedEvents.push({ id, ...events[i] });
-    }
-
-    return projectElection(persistedEvents, election);
+    election.dateUpdated = new Date().toISOString();
+    return updateElection(election);
   },
 };
 

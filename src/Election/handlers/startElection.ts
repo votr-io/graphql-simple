@@ -1,5 +1,6 @@
-import { Context } from '../../context';
-import { Election } from '../types';
+import { updateElection } from './../../stores/election';
+import { Context } from '../../api/context';
+import { Election } from '../../types';
 import { Handler, useHandler } from '../../lib/handler';
 import { getElectionAndCheckPermissionsToUpdate, authenticate } from './common';
 import { UserInputError } from 'apollo-server';
@@ -14,7 +15,6 @@ const handler: Handler<
   authenticate,
   validate,
   handleRequest: async (ctx, { id }) => {
-    
     const election = await getElectionAndCheckPermissionsToUpdate(ctx, id);
 
     if (election.status === 'OPEN') {
@@ -26,18 +26,15 @@ const handler: Handler<
       throw new UserInputError(`can't start an election that is ${election.status}`);
     }
 
-    await ctx.eventStore.create({
-      event_type: 'election_started',
-      aggregate_type: 'election',
-      aggregate_id: id,
-      date_created: new Date().toISOString(),
-      actor: ctx.claims.userId,
-      data: {
-        id,
-      },
-    });
+    const now = new Date().toISOString();
+    election.status = 'OPEN';
+    election.dateUpdated = now;
+    election.statusTransitions = [
+      ...election.statusTransitions,
+      { on: now, status: 'OPEN' },
+    ];
 
-    return ctx.eventStore.getElection(id);
+    return updateElection(election);
   },
 };
 

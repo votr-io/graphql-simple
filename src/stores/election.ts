@@ -2,20 +2,16 @@ import { db } from './db';
 import { isObject } from 'util';
 import { Election } from '../types';
 
-export const createElection = async (input: {
-  election: Election;
-}): Promise<Election> => {
-  const dbElection = toDbElection(input.election);
+export const createElection = async (election: Election): Promise<Election> => {
+  const dbElection = toDbElection(election);
   const [columns, values] = columnsAndValues(dbElection);
   const query = `INSERT INTO elections VALUES(${columns.join(', ')});`;
   await db.none(query, values);
-  return input.election;
+  return election;
 };
 
-export const updateElection = async (input: {
-  election: Election;
-}): Promise<Election> => {
-  const dbElection = toDbElection(input.election);
+export const updateElection = async (election: Election): Promise<Election> => {
+  const dbElection = toDbElection(election);
   const query = `UPDATE elections SET name = $(name), description = $(description), date_updated = $(date_updated), status = $(status), status_transistions=$(status_transitions), results = $(results), candidates = $(candidates) WHERE id = $(id)`;
   await db.none(query, {
     ...dbElection,
@@ -23,37 +19,23 @@ export const updateElection = async (input: {
     candidates: JSON.stringify(dbElection.candidates),
     results: JSON.stringify(dbElection.results),
   });
-  return input.election;
+  return election;
 };
 
-export const getElections = async (input: { ids: String[] }): Promise<Election[]> => {
-  const { ids } = input;
+export const getElections = async (ids: String[]): Promise<Election[]> => {
   const dbElections = await db.any('SELECT * FROM elections WHERE id IN ($1:csv);', ids);
   return dbElections.map(fromDbElection);
 };
 
 export const getElection = async (id: string): Promise<Election> => {
-  const [election] = await getElections({ ids: [id] });
+  const [election] = await getElections([id]);
   return election;
 };
 
-export const deleteElections = async (input: { ids: String[] }) => {
-  const { ids } = input;
+export const deleteElections = async (ids: String[]) => {
   //TODO: make this transactional
   await db.none('DELETE FROM ballots WHERE election_id IN ($1:csv);', ids);
   return await db.none('DELETE FROM elections WHERE id IN ($1:csv);', ids);
-};
-
-//TOOD: refactor this to take candidate ids
-export const createBallot = async (input: {
-  electionId: string;
-  candidateIndexes: number[];
-}) => {
-  const { electionId, candidateIndexes } = input;
-  await db.none(`INSERT INTO ballots VALUES($1, $2)`, [
-    electionId,
-    JSON.stringify(candidateIndexes),
-  ]);
 };
 
 function columnsAndValues(o: Object): [string[], Object] {

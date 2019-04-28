@@ -1,7 +1,8 @@
-import { Context } from '../../context';
-import { Election } from '../types';
+import { Context } from '../context';
+import { Election } from '../../types';
 import { ForbiddenError } from 'apollo-server';
-import * as tokens from '../../User/tokens';
+import * as tokens from '../../lib/tokens';
+import { getElection } from '../../stores/election';
 
 export function authenticate(ctx: Context) {
   ctx.claims = tokens.validate(ctx.token);
@@ -13,7 +14,7 @@ export async function getElectionAndCheckPermissionsToUpdate(
   id: string
 ): Promise<Election> {
   const claims = tokens.validate(ctx.token);
-  const election = await ctx.eventStore.getElection(id);
+  const election = await getElection(id);
 
   if (election.createdBy !== claims.userId) {
     //TODO: make your own typed errors, don't use apollo here

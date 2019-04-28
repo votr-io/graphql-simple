@@ -1,10 +1,10 @@
-import { Context } from '../../context';
-import { Election, Results } from '../types';
+import { Context } from '../../api/context';
+import { Election } from '../../types';
 import { Handler, useHandler } from '../../lib/handler';
 import { getElectionAndCheckPermissionsToUpdate, authenticate } from './common';
 import { UserInputError } from 'apollo-server';
-import countVotes from '../../Ballot/handlers/countVotes';
-import { ElectionResults } from 'alt-vote';
+import { updateElection } from '../../stores/election';
+import { tallyElection } from '../tallyElection';
 
 const handler: Handler<
   Context,
@@ -28,36 +28,25 @@ const handler: Handler<
     }
 
     //the election has stopped
-    await ctx.eventStore.create({
-      event_type: 'election_stopped',
-      aggregate_type: 'election',
-      aggregate_id: id,
-      date_created: new Date().toISOString(),
-      actor: ctx.claims.userId,
-      data: {
-        id,
-      },
-    });
+    const now = new Date().toISOString();
+    election.status = 'CLOSED';
+    election.dateUpdated = now;
+    election.statusTransitions = [
+      ...election.statusTransitions,
+      { on: now, status: 'CLOSED' },
+    ];
+
+    await updateElection(election);
 
     //now that the election is stopped, we need to calculate results
     try {
-      const rawResults = await countVotes(ctx, { electionId: election.id });
-      await ctx.eventStore.create({
-        event_type: 'votes_counted',
-        aggregate_type: 'election',
-        aggregate_id: id,
-        date_created: new Date().toISOString(),
-        actor: 'system',
-        data: {
-          results: transformResults(rawResults),
-        },
-      });
+      election.results = await tallyElection(election.id);
     } catch (e) {
       console.log(e);
     }
 
     //return the full election, now with results
-    return ctx.eventStore.getElection(id);
+    return updateElection(election);
   },
 };
 
@@ -72,22 +61,6 @@ function validate(input: { id: string }): string {
     return errors.join(', ');
   }
   return null;
-}
-
-//helper to go from raw results to what we've defined on the election model
-function transformResults({ winner, rounds }: ElectionResults): Results {
-  return {
-    winner,
-    replay: rounds.map(round => {
-      return {
-        candidateTotals: Object.keys(round).map(candidateId => ({
-          candidateId,
-          votes: round[candidateId],
-        })),
-        redistribution: [], //TODO
-      };
-    }),
-  };
 }
 
 export default useHandler(handler);

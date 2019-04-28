@@ -1,8 +1,6 @@
-import { Context } from '../../context';
-import { Election } from '../types';
+import { Context } from '../../api/context';
+import { Election } from '../../types';
 import lodash = require('lodash');
-import { ElectionCreated } from '../events';
-import { WithoutId } from '../EventStore';
 import { Handler, useHandler } from '../../lib/handler';
 import { sendNewElectionEmail } from '../../Email/emailer';
 
@@ -29,7 +27,7 @@ const createElectionHandler: Handler<
   Promise<Election>
 > = {
   validate,
-  handleRequest: async ({ userStore, eventStore }, input) => {
+  handleRequest: async (ctx, input) => {
     const { name, description, candidates } = input.electionForm;
     const { email } = input;
 
